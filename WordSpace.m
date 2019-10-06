@@ -1,7 +1,7 @@
 classdef WordSpace
     %WORDSPACE A set of valid words
     
-    properties
+    properties (Access = private)
         words
     end
     
@@ -23,7 +23,7 @@ classdef WordSpace
             return;
         end
         
-        function self = addSymbols(self, word)
+        function self = addWord(self, word)
             %ADDWORD Adds a word to the space
             self.words(1, end + 1) = word;
             return;

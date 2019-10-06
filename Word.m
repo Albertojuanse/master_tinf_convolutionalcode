@@ -2,7 +2,7 @@ classdef Word
     %WORD Set of symbols from an alphabet that represents some experiment
     %result
     
-    properties
+    properties (Access = private)
         symbols
     end
     
@@ -25,8 +25,8 @@ classdef Word
             return;
         end
         
-        function self = addSymbols(self, symbol)
-            %ADDSYMBOL Adds a symbols to the word
+        function self = addSymbol(self, symbol)
+            %ADDSYMBOL Adds a symbol to the word
             self.symbols(1, end + 1) = symbol;
             return;
         end

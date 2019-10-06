@@ -1,7 +1,7 @@
 classdef Alphabet
     %ALPHABET Set of symbols for generate words
     
-    properties
+    properties (Access = private)
         symbols
     end
     
