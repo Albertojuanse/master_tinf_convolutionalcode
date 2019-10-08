@@ -6,6 +6,9 @@ classdef StateMachine
         states_adjacency_matrix
         states_input_matrix
         states_output_matrix
+        states_transitions
+        last_transition
+        transitions
     end
     
     methods
@@ -15,6 +18,9 @@ classdef StateMachine
             self.states_adjacency_matrix = [;];
             self.states_input_matrix = [;];
             self.states_output_matrix = [;];
+            self.states_transitions  = [;];
+            self.last_transition = State(-1);
+            self.transitions = [];
         end
         
         % Getters and setters
@@ -46,6 +52,79 @@ classdef StateMachine
         function self = setOutputMatrix(self, output_matrix)
             %SETOUTPUTMATRIX Set the output matrix of the state machine
             self.states_output_matrix = output_matrix;
+        end
+        
+        % Instance methods        
+        function self = resetMachine(self)
+            %RESETMACHINE Set the instance atributes as an initial state
+            
+            % Control error
+            if size(self.states, 2) < 2
+                fprintf('[ERROR] State machine reset error: insuficent number of states %.2f \n', size(self.states, 2));
+            end
+            
+            equalsStatesFound = false;
+            for i_state = 1:size(self.states, 2)
+                for j_state = 1:size(self.states, 2)
+                    if self.states(i_state).getValue() == self.states(j_state).getValue()
+                        equalsStatesFound = true;
+                    end                    
+                end
+            end
+            if equalsStatesFound
+                fprintf('[ERROR] State machine reset error: found two equals states');
+            end
+            
+            if size(self.states_adjacency_matrix, 2) ~= size(self.states, 2)
+                if size(self.states_adjacency_matrix, 1)  ~= size(self.states, 1)
+                    fprintf('[ERROR] State machine reset error: adjacency matrix must be %.2fx%.2f \n', size(self.states, 1), size(self.states, 2));
+                end
+            end
+            
+            if size(self.states_input_matrix, 2) ~= size(self.states, 2)
+                if size(self.states_input_matrix, 1)  ~= size(self.states, 1)
+                    fprintf('[ERROR] State machine reset error: input matrix must be %.2fx%.2f \n', size(self.states, 1), size(self.states, 2));
+                end
+            end
+            
+            if size(self.states_output_matrix, 2) ~= size(self.states, 2)
+                if size(self.states_output_matrix, 1)  ~= size(self.states, 1)
+                    fprintf('[ERROR] State machine reset error: output matrix must be %.2fx%.2f \n', size(self.states, 1), size(self.states, 2));
+                end
+            end
+            
+            % Construct the machine
+            % Search in the adjacency matrix            
+            self.states_transitions  = zeros(size(self.states, 1), size(self.states), 2);
+            for i_row = 1:size(self.states, 1)
+                for i_column = 1:size(self.states, 1)
+                    
+                    if self.states(i_row, i_column) == 1
+                        
+                        % Create a transition with all the information
+                        from_state = self.states(i_rows);
+                        to_state = self.states(i_columns);
+                        input = self.states_input_matrix(i_row, i_column);
+                        output = self.states_output_matrix(i_row, i_column);
+                        transition = Transition(from_state, to_state, input, output);
+                        self.states_transitions(i_row, i_column) = transition;
+                        
+                    end
+                    
+                end
+            end
+            
+            % Start in rest
+            self.transitions(1, end+1) = self.states_transitions(1,1);
+            
+        end
+        
+        function self = runMachineWithInput(self, input)
+            %RUNMACHINEWITHINPUT Set the machine in the next state given an
+            %input
+            
+            
+            
         end
         
     end
