@@ -53,14 +53,14 @@ function coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn
     % STATES_OUTPUT =    {{'00','11'},   {'00','11'},   {'11','00'},   {'11','00'},   {'10','01'},   {'10','01'},   {'01','10'},   {'01','10'}  };
     % STATES_INPUT =     {{'0','1'},     {'0','1'},     {'0','1'},     {'0','1'},     {'0','1'},     {'0','1'},     {'0','1'},     {'0','1'}    };
     state_machine = StateMachine();
-    state_machine = state_machine.addState([0 0 0]);
-    state_machine = state_machine.addState([0 0 1]);
-    state_machine = state_machine.addState([0 1 0]);
-    state_machine = state_machine.addState([0 1 1]);
-    state_machine = state_machine.addState([1 0 0]);
-    state_machine = state_machine.addState([1 0 1]);
-    state_machine = state_machine.addState([1 1 0]);
-    state_machine = state_machine.addState([1 1 1]);
+    state_machine = state_machine.addState(State([0 0 0]));
+    state_machine = state_machine.addState(State([0 0 1]));
+    state_machine = state_machine.addState(State([0 1 0]));
+    state_machine = state_machine.addState(State([0 1 1]));
+    state_machine = state_machine.addState(State([1 0 0]));
+    state_machine = state_machine.addState(State([1 0 1]));
+    state_machine = state_machine.addState(State([1 1 0]));
+    state_machine = state_machine.addState(State([1 1 1]));
     
     adjacency_matrix = [1 0 0 0 1 0 0 0;
                         1 0 0 0 1 0 0 0;
@@ -225,14 +225,28 @@ function coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn
     o_m_86 =  Word([ -1]);
     o_m_87 =  Word([ -1]);
     o_m_88 =  Word([1 0]);
-    input_matrix = [o_m_11 o_m_12 o_m_13 o_m_14 o_m_15 o_m_16 o_m_17 o_m_18;
-                    o_m_21 o_m_22 o_m_23 o_m_24 o_m_25 o_m_26 o_m_27 o_m_28;
-                    o_m_31 o_m_32 o_m_33 o_m_34 o_m_35 o_m_36 o_m_37 o_m_38;
-                    o_m_41 o_m_42 o_m_43 o_m_44 o_m_45 o_m_46 o_m_47 o_m_48;
-                    o_m_51 o_m_52 o_m_53 o_m_54 o_m_55 o_m_56 o_m_57 o_m_58;
-                    o_m_61 o_m_62 o_m_63 o_m_64 o_m_65 o_m_66 o_m_67 o_m_68;
-                    o_m_71 o_m_72 o_m_73 o_m_74 o_m_75 o_m_76 o_m_77 o_m_78;
-                    o_m_81 o_m_82 o_m_83 o_m_84 o_m_85 o_m_86 o_m_87 o_m_88;
-                    ];
+    output_matrix = [o_m_11 o_m_12 o_m_13 o_m_14 o_m_15 o_m_16 o_m_17 o_m_18;
+                     o_m_21 o_m_22 o_m_23 o_m_24 o_m_25 o_m_26 o_m_27 o_m_28;
+                     o_m_31 o_m_32 o_m_33 o_m_34 o_m_35 o_m_36 o_m_37 o_m_38;
+                     o_m_41 o_m_42 o_m_43 o_m_44 o_m_45 o_m_46 o_m_47 o_m_48;
+                     o_m_51 o_m_52 o_m_53 o_m_54 o_m_55 o_m_56 o_m_57 o_m_58;
+                     o_m_61 o_m_62 o_m_63 o_m_64 o_m_65 o_m_66 o_m_67 o_m_68;
+                     o_m_71 o_m_72 o_m_73 o_m_74 o_m_75 o_m_76 o_m_77 o_m_78;
+                     o_m_81 o_m_82 o_m_83 o_m_84 o_m_85 o_m_86 o_m_87 o_m_88;
+                     ];
     state_machine = state_machine.addOutputMatrix(output_matrix);
     
+    state_machine = state_machine.resetMachine();
+    
+    %% Coding
+    
+    % for every input, run the state machine
+    for input = expandedCoderIn
+        
+        output = state_machine.runMachineWithInput(x);
+            
+        coderOut(1, end+1) = output(1, 1);
+        coderOut(1, end+2) = output(1, 1);
+        
+    end
+end

@@ -18,7 +18,6 @@ classdef StateMachine
             self.states_input_matrix = [;];
             self.states_output_matrix = [;];
             self.states_transitions  = [;];
-            self.last_transition = State(-1);
             self.transitions = [];
         end
         
