@@ -50,6 +50,35 @@ classdef Transition
             self.accumulated_path = self.accumulated_path + path;
         end
         
+        function flag = isEqualsToTransition(self, other_transition)
+            %ISEQUALSTOTRANSITION Return weather the object is equals to another
+            flag = false;
+            if class(other_transition) == class(self)
+                
+                other_from_state = other_transition.from_state;
+                if self.from_state.isEqualsToState(other_from_state)
+                    
+                    other_to_state = other_transition.to_state;
+                    if self.to_state.isEqualsToState(other_to_state)
+                        
+                        other_input = other_transition.input;
+                        if self.input == other_input
+                            
+                            other_output = other_transition.output;
+                            if self.output == other_output
+                                flag = true;
+                            end
+                            
+                        end
+                        
+                    end
+                    
+                end
+            
+            end
+            
+        end
+        
     end
 end
 

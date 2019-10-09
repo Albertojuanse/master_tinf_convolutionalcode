@@ -15,6 +15,16 @@ classdef State
             %GETVALUE Getter of state value
             value = self.state_value;
         end
+        
+        function flag = isEqualsToState(self, other_state)
+            %ISEQUALSTOSTATE Return weather the object is equals to another
+            flag = false;
+            if class(other_transition) == class(self)
+                if self.state_value == other_state.state_value
+                    flag = true;
+                end
+            end
+        end
     end
     
 end
