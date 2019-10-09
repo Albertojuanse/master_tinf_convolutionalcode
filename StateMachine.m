@@ -7,7 +7,6 @@ classdef StateMachine
         states_input_matrix
         states_output_matrix
         states_transitions
-        last_transition
         transitions
     end
     
@@ -102,8 +101,8 @@ classdef StateMachine
                     if self.states(i_row, i_column) == 1
                         
                         % Create a transition with all the information
-                        from_state = self.states(i_rows);
-                        to_state = self.states(i_columns);
+                        from_state = self.states(1, i_rows);
+                        to_state = self.states(1, i_columns);
                         input = self.states_input_matrix(i_row, i_column);
                         output = self.states_output_matrix(i_row, i_column);
                         transition = Transition(from_state, to_state, input, output);
@@ -119,11 +118,38 @@ classdef StateMachine
             
         end
         
-        function self = runMachineWithInput(self, input)
+        function output = runMachineWithInput(self, input)
             %RUNMACHINEWITHINPUT Set the machine in the next state given an
             %input
             
+            output = -1;
             
+            last_transition =  self.transitions(1, end);
+            last_to_state = last_transition.getToState();
+            last_from_state = last_transition.getFromState();
+            
+            % for every transition search for which the last final to_state
+            % is the one from_state
+            for i_transition = 1:size(self.states_transitions, 1)
+                
+                each_transition = self.states_transitions(i_transition, 1);
+                each_to_state = each_transition.getFromState();
+                if each_to_state.isEqualsToState(last_to_state)
+                    
+                    % and when found, check if the given input is the 
+                    % transition one
+                    each_input = each_transition.getInput();transition
+                    if each_input == input
+                        
+                        % transition found; save
+                        output = each_transition.getOutput();
+                        self.transitions(1, end+1) = each_transition;
+                        
+                    end                    
+                    
+                end
+                
+            end
             
         end
         
