@@ -11,14 +11,18 @@ classdef StateMachine
     end
     
     methods
-        function self = StateMachine()
+        function self = StateMachine(numberOfStates)
             %STATEMACHINE Construct a state machine object
-            self.states = [];
-            self.states_adjacency_matrix = [;];
-            self.states_input_matrix = [;];
-            self.states_output_matrix = [;];
-            self.states_transitions  = [;];
-            self.transitions = [];
+            self.states(1, numberOfStates) = [];
+            self.states_adjacency_matrix = zeros(numberOfStates, numberOfStates);
+            self.states_input_matrix(numberOfStates, numberOfStates) = Word([-1]);
+            self.states_output_matrix(numberOfStates, numberOfStates) = Word([-1]);
+            init_to_state = State(-1);
+            init_from_state = State(-1);
+            init_input = Word([-1]);
+            init_output = Word([-1]);
+            self.states_transitions(numberOfStates, numberOfStates) = Transition(init_from_state, init_to_state, init_input, init_output);
+            self.transitions(1, end+1) = self.states_transitions(1,1);;
         end
         
         % Getters and setters
@@ -97,7 +101,7 @@ classdef StateMachine
             for i_row = 1:size(self.states, 1)
                 for i_column = 1:size(self.states, 1)
                     
-                    if self.states(i_row, i_column) == 1
+                    if self.states_adjacency_matrix(i_row, i_column) == 1
                         
                         % Create a transition with all the information
                         from_state = self.states(1, i_rows);
