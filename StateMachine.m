@@ -13,16 +13,16 @@ classdef StateMachine
     methods
         function self = StateMachine(numberOfStates)
             %STATEMACHINE Construct a state machine object
-            self.states(1, numberOfStates) = [];
+            self.states{1, 1:numberOfStates} = State(-1);
             self.states_adjacency_matrix = zeros(numberOfStates, numberOfStates);
-            self.states_input_matrix(numberOfStates, numberOfStates) = Word([-1]);
-            self.states_output_matrix(numberOfStates, numberOfStates) = Word([-1]);
+            self.states_input_matrix{1:numberOfStates, 1:numberOfStates} = Word([-1]);
+            self.states_output_matrix{1:numberOfStates, 1:numberOfStates} = Word([-1]);
             init_to_state = State(-1);
             init_from_state = State(-1);
             init_input = Word([-1]);
             init_output = Word([-1]);
-            self.states_transitions(numberOfStates, numberOfStates) = Transition(init_from_state, init_to_state, init_input, init_output);
-            self.transitions(1, end+1) = self.states_transitions(1,1);;
+            self.states_transitions{1:numberOfStates, 1:numberOfStates} = Transition(init_from_state, init_to_state, init_input, init_output);
+            self.transitions{1, end+1} = self.states_transitions{1,1};
         end
         
         % Getters and setters
@@ -33,12 +33,14 @@ classdef StateMachine
         
         function self = addState(self, state)
             %ADDSTATE Adds a state to the machine
-            self.states(1, end + 1) = state;
+            self.states{1, end + 1} = state;
         end
         
         function self = addStates(self, states)
             %ADDSTATES Adds a set of states to the machine
-            self.states = [self.states states];
+            for s = 1:size(self.states, 2)
+                self.states{1, end + 1} = states{s};
+            end
         end
         
         function self = setAdjacencyMatrix(self, adjacency_matrix)
@@ -68,7 +70,7 @@ classdef StateMachine
             equalsStatesFound = false;
             for i_state = 1:size(self.states, 2)
                 for j_state = 1:size(self.states, 2)
-                    if self.states(i_state).getValue() == self.states(j_state).getValue()
+                    if self.states{i_state}.getValue() == self.states{j_state}.getValue()
                         equalsStatesFound = true;
                     end                    
                 end
@@ -109,7 +111,7 @@ classdef StateMachine
                         input = self.states_input_matrix(i_row, i_column);
                         output = self.states_output_matrix(i_row, i_column);
                         transition = Transition(from_state, to_state, input, output);
-                        self.states_transitions(i_row, i_column) = transition;
+                        self.states_transitions{i_row, i_column} = transition;
                         
                     end
                     
@@ -117,7 +119,7 @@ classdef StateMachine
             end
             
             % Start in rest
-            self.transitions(1, end+1) = self.states_transitions(1,1);
+            self.transitions{1, end+1} = self.states_transitions{1,1};
             
         end
         
@@ -127,7 +129,7 @@ classdef StateMachine
             
             output = -1;
             
-            last_transition =  self.transitions(1, end);
+            last_transition =  self.transitions{1, end};
             last_to_state = last_transition.getToState();
             last_from_state = last_transition.getFromState();
             
@@ -135,7 +137,7 @@ classdef StateMachine
             % is the one from_state
             for i_transition = 1:size(self.states_transitions, 1)
                 
-                each_transition = self.states_transitions(i_transition, 1);
+                each_transition = self.states_transitions{i_transition, 1};
                 each_to_state = each_transition.getFromState();
                 if each_to_state.isEqualsToState(last_to_state)
                     
@@ -146,7 +148,7 @@ classdef StateMachine
                         
                         % transition found; save
                         output = each_transition.getOutput();
-                        self.transitions(1, end+1) = each_transition;
+                        self.transitions{1, end+1} = each_transition;
                         
                     end                    
                     
