@@ -117,7 +117,7 @@ function coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn
     i_m_57 =  Word([ 1]);
     i_m_58 =  Word([-1]);
     
-    i_m_51 =  Word([-1]);
+    i_m_61 =  Word([-1]);
     i_m_62 =  Word([-1]);
     i_m_63 =  Word([ 0]);
     i_m_64 =  Word([-1]);
@@ -152,7 +152,7 @@ function coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn
                     i_m_71 i_m_72 i_m_73 i_m_74 i_m_75 i_m_76 i_m_77 i_m_78;
                     i_m_81 i_m_82 i_m_83 i_m_84 i_m_85 i_m_86 i_m_87 i_m_88;
                     ];
-    state_machine = state_machine.addInputMatrix(input_matrix);
+    state_machine = state_machine.setInputMatrix(input_matrix);
     
     o_m_11 =  Word([0 0]);
     o_m_12 =  Word([ -1]);
@@ -199,7 +199,7 @@ function coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn
     o_m_57 =  Word([0 1]);
     o_m_58 =  Word([ -1]);
     
-    o_m_51 =  Word([ -1]);
+    o_m_61 =  Word([ -1]);
     o_m_62 =  Word([ -1]);
     o_m_63 =  Word([1 0]);
     o_m_64 =  Word([ -1]);
@@ -234,7 +234,7 @@ function coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn
                      o_m_71 o_m_72 o_m_73 o_m_74 o_m_75 o_m_76 o_m_77 o_m_78;
                      o_m_81 o_m_82 o_m_83 o_m_84 o_m_85 o_m_86 o_m_87 o_m_88;
                      ];
-    state_machine = state_machine.addOutputMatrix(output_matrix);
+    state_machine = state_machine.setOutputMatrix(output_matrix);
     
     state_machine = state_machine.resetMachine();
     

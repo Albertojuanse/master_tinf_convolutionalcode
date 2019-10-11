@@ -37,7 +37,7 @@ classdef Word
         function longitudeOfWord =longitudeOfWord(self)
             %LONGITUDEOSWORD Returns the number of symbols in the word
             matrix_symbols = self.symbols{1, 1};
-            longitudeOfWord = size{matrix_symbols, 2};
+            longitudeOfWord = size(matrix_symbols, 2);
             return;
         end
     end

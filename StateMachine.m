@@ -13,15 +13,20 @@ classdef StateMachine
     methods
         function self = StateMachine(numberOfStates)
             %STATEMACHINE Construct a state machine object
-            self.states{1, 1:numberOfStates} = State(-1);
-            self.states_adjacency_matrix = zeros(numberOfStates, numberOfStates);
-            self.states_input_matrix{1:numberOfStates, 1:numberOfStates} = Word([-1]);
-            self.states_output_matrix{1:numberOfStates, 1:numberOfStates} = Word([-1]);
             init_to_state = State(-1);
             init_from_state = State(-1);
             init_input = Word([-1]);
             init_output = Word([-1]);
-            self.states_transitions{1:numberOfStates, 1:numberOfStates} = Transition(init_from_state, init_to_state, init_input, init_output);
+            self.states_adjacency_matrix = zeros(numberOfStates, numberOfStates);
+            for i_state = 1:numberOfStates
+                self.states{1, i_state} = State(-1);
+                
+                for j_state = 1:numberOfStates
+                    self.states_input_matrix{i_state, j_state} = Word([-1]);
+                    self.states_output_matrix{i_state, j_state} = Word([-1]);
+                    self.states_transitions{i_state, j_state} = Transition(init_from_state, init_to_state, init_input, init_output);
+                end
+            end
             self.transitions{1, end+1} = self.states_transitions{1,1};
         end
         
