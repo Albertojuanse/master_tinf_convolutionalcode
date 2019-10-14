@@ -243,7 +243,7 @@ function coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn
     % for every input, run the state machine
     for input = expandedCoderIn
         
-        output = state_machine.runMachineWithInput(x);
+        output = state_machine.runMachineWithInput(input);
             
         coderOut(1, end+1) = output(1, 1);
         coderOut(1, end+2) = output(1, 1);

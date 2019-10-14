@@ -19,7 +19,6 @@ classdef StateMachine
             init_output = Word([-1]);
             self.states_adjacency_matrix = zeros(numberOfStates, numberOfStates);
             for i_state = 1:numberOfStates
-                self.states{1, i_state} = State(-1);
                 
                 for j_state = 1:numberOfStates
                     self.states_input_matrix{i_state, j_state} = Word([-1]);
@@ -75,13 +74,15 @@ classdef StateMachine
             equalsStatesFound = false;
             for i_state = 1:size(self.states, 2)
                 for j_state = 1:size(self.states, 2)
+                    self.states{i_state}.getValue()
+                    self.states{j_state}.getValue()
                     if self.states{i_state}.getValue() == self.states{j_state}.getValue()
                         equalsStatesFound = true;
                     end                    
                 end
             end
             if equalsStatesFound
-                fprintf('[ERROR] State machine reset error: found two equals states');
+                fprintf('[ERROR] State machine reset error: found two equals states \n');
             end
             
             if size(self.states_adjacency_matrix, 2) ~= size(self.states, 2)
@@ -104,15 +105,15 @@ classdef StateMachine
             
             % Construct the machine
             % Search in the adjacency matrix            
-            self.states_transitions  = zeros(size(self.states, 1), size(self.states), 2);
+            self.states_transitions  = {};
             for i_row = 1:size(self.states, 1)
                 for i_column = 1:size(self.states, 1)
                     
                     if self.states_adjacency_matrix(i_row, i_column) == 1
                         
                         % Create a transition with all the information
-                        from_state = self.states(1, i_rows);
-                        to_state = self.states(1, i_columns);
+                        from_state = self.states(1, i_row);
+                        to_state = self.states(1, i_column);
                         input = self.states_input_matrix(i_row, i_column);
                         output = self.states_output_matrix(i_row, i_column);
                         transition = Transition(from_state, to_state, input, output);
@@ -144,7 +145,7 @@ classdef StateMachine
                 
                 each_transition = self.states_transitions{i_transition, 1};
                 each_to_state = each_transition.getFromState();
-                if each_to_state.isEqualsToState(last_to_state)
+                if each_to_state{1}.isEqualsToState(last_to_state)
                     
                     % and when found, check if the given input is the 
                     % transition one

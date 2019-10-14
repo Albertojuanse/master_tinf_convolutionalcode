@@ -19,9 +19,11 @@ classdef State
         function flag = isEqualsToState(self, other_state)
             %ISEQUALSTOSTATE Return weather the object is equals to another
             flag = false;
-            if class(other_transition) == class(self)
-                if self.state_value == other_state.state_value
-                    flag = true;
+            if (size(class(other_state), 2)) == size(class(self), 2)
+                if class(other_state) == class(self)
+                    if self.state_value == other_state.state_value
+                        flag = true;
+                    end
                 end
             end
         end
