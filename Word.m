@@ -40,5 +40,21 @@ classdef Word
             longitudeOfWord = size(matrix_symbols, 2);
             return;
         end
+        
+        function flag = isEqualsToWord(self, other_word)
+            %ISEQUALSTOWORD Return weather the object is equals to another
+            flag = false;
+            if (size(class(other_word), 2)) == size(class(self), 2)
+                if class(other_word) == class(self)
+
+                    other_symbols = other_word.getSymbols();
+                    if self.symbols == other_symbols
+                        flag = true;
+                    end
+
+                end
+            end
+        end
+        
     end
 end
