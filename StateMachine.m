@@ -1,7 +1,7 @@
 classdef StateMachine
     %STATEMACHINE Defines an state machine, its states and transitions
     
-    properties (Access = private)
+    properties (Access = public)
         states
         states_adjacency_matrix
         states_input_matrix
@@ -74,11 +74,11 @@ classdef StateMachine
             equalsStatesFound = false;
             for i_state = 1:size(self.states, 2)
                 for j_state = 1:size(self.states, 2)
-                    self.states{i_state}.getValue()
-                    self.states{j_state}.getValue()
-                    if self.states{i_state}.getValue() == self.states{j_state}.getValue()
-                        equalsStatesFound = true;
-                    end                    
+                    if i_state ~= j_state
+                        if self.states{i_state}.getValue() == self.states{j_state}.getValue()
+                            equalsStatesFound = true;
+                        end
+                    end
                 end
             end
             if equalsStatesFound
@@ -149,7 +149,7 @@ classdef StateMachine
                     
                     % and when found, check if the given input is the 
                     % transition one
-                    each_input = each_transition.getInput();transition
+                    each_input = each_transition.getInput();
                     if each_input == input
                         
                         % transition found; save
