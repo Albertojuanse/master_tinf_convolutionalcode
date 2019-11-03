@@ -22,12 +22,12 @@ classdef Transition
         
         function from_state = getFromState(self)
             %GETFROMSTATE Returns the state from the transition was set
-            from_state = self.from_state;
+            from_state = self.from_state{1};
         end
         
         function to_state = getToState(self)
             %GETTOSTATE Returns the state to the transition was set
-            to_state = self.to_state;
+            to_state = self.to_state{1};
         end
         
         function input = getInput(self)
