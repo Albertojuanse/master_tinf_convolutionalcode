@@ -28,8 +28,11 @@ end
 fprintf('The size of SOURCE is %.2f \n', size(SOURCE, 2));
 
 %% Coding
+% polGeneradorDen = [1 0 1]
+% polGenNum = [1 1 1]
+% mod(filter(polGeneradorDen, polGenNum, in), 2)
 coderIn = SOURCE;
-coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn)
+coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn);
 
 %% Chenneling
 decoderIn = canal(coderOut, SIGMA, MU);
