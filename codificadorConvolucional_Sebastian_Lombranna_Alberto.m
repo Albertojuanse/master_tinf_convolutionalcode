@@ -29,7 +29,48 @@ function coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn
     %
     % It is used the same number of tail bits than the number of registers.
     %
+    % The code can be punctured; <-
+    %
     % Binary arithmetic must be used; hardcoded if statements to fix it.
     
-   %% Coder
+    %% Variable declaration and initialization
+    ALPHABET = [0 1];          % Source alphabet
+    DISTRIBUTION = [0.5 0.5];  % A priori symbol distribution
+    k = 3;                     % Number of registers
+    K = zeros(1, k);           % Registers in rest
+    G = [1 1; 1 0; 1 1];       % Characteristic polynomial (1 1 1, 1 0 1)
+    TB = zeros(1, k);          % Tail bits
+    
+    %% Pretreatment
+    expandedCoderIn = [coderIn,TB];
+    coderOut = zeros(1, 2*size(expandedCoderIn, 2));
+
+    %% Coding
+    outIndex = 1;
+    for x = expandedCoderIn
+        
+        % 1) Run registers
+        for regIndex = k:-1:1             
+            % If it is the first register, load the fresh bit...
+            if regIndex == 1
+                K(1, regIndex) = x;
+            % ...but if not, shift them.
+            else
+                K(1, regIndex) = K(1, regIndex - 1);
+            end
+        end
+        
+        % 2) and generate the codeword and save it.     
+        Y = K*G;
+        for codeWordIndex = 1:size(Y,2)
+            
+            % 2.1) Decimal to binary arithmetic
+            Y(1, codeWordIndex) = mod(Y(1, codeWordIndex),2);
+            
+            coderOut(1, outIndex) = Y(1, codeWordIndex);
+            outIndex = outIndex + 1;
+        end
+        
+    end
 end
+

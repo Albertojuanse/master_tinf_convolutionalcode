@@ -9,7 +9,7 @@ SOURCE = [0 1 1 0 0 0 1 0 1 1 0 0 0];
 SOURCE_LENGTH = 1000;
 
 % Noise
-SIGMA = 0.0001;
+SIGMA = 0.01;
 MU = 0;
 
 
@@ -28,15 +28,12 @@ end
 fprintf('The size of SOURCE is %.2f \n', size(SOURCE, 2));
 
 %% Coding
-% polGeneradorDen = [1 0 1]
-% polGenNum = [1 1 1]
-% mod(filter(polGeneradorDen, polGenNum, in), 2)
 coderIn = SOURCE;
 coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn);
 
-%% Chenneling
-decoderIn = canal(coderOut, SIGMA, MU);
-noisy_coderIn = canal(coderIn, SIGMA, MU);
+%% Channeling
+decoderIn = gaussianChannel(coderOut, MU, SIGMA);
+noisy_coderIn = decoderIn;
 
 %% Decoding
 if SOFT_FLAG
