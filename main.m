@@ -33,7 +33,7 @@ coderOut = codificadorConvolucional_Sebastian_Lombranna_Alberto(coderIn);
 
 %% Channeling
 decoderIn = gaussianChannel(coderOut, MU, SIGMA);
-noisy_coderIn = decoderIn;
+noisy_coderIn = gaussianChannel(coderIn, MU, SIGMA);
 
 %% Decoding
 if SOFT_FLAG
@@ -82,6 +82,7 @@ for i = 1:size(coderIn, 2)
         errors_convolution = errors_convolution + 1;
     end
 end
+
 BER_convolution = errors_convolution/(errors_convolution + equals_convolution);
 BER_no_convolution = errors_no_convolution/(errors_no_convolution + equals_no_convolution);
 fprintf('The BER with convolutional coding is %.2f \n', BER_convolution);
