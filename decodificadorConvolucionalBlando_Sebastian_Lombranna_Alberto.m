@@ -20,10 +20,10 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
     input_size = size(decoderIn,2);
     extendedDecoderOut = zeros(abs(input_size/2), 1); % Ignored an possible odd input
     
-    STATES =           ['00';'01';'10';'11'];
-    STATES_ADJACENCY = ['00','10';'00','10';'01','11';'01','11'];
-    STATES_OUTPUT =    ['00','11';'11','00';'10','01';'01','10'];
-    STATES_INPUT =     ['01';'01';'01';'01'];
+    STATES =            [   '00'  ;   '01'  ;   '10'  ;   '11'  ];
+    STATES_ADJACENCY =  ['00','10';'00','10';'01','11';'01','11'];
+    STATES_OUTPUT =     ['00','11';'11','00';'10','01';'01','10'];
+    STATES_INPUT =      [ '0   1' ; '0   1' ; '0   1' ; '0   1' ];
         
     % Collections for saving the acumulated path cost; trellis diagram
     trellis_states = STATES(1,:);
@@ -46,20 +46,22 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
         % -> its adjacencies,
         % -> its output of the state machine when triggered, and
         % -> the inputs that triggered that transtition.
-        current_trellis_states = trellis_states(i_input);
-        current_trellis_adjacency = trellis_adjacency(i_input);
-        current_trellis_output = trellis_output(i_input);
-        current_trellis_input = trellis_input(i_input);
+        current_trellis_states = trellis_states(i_input,:);
+        current_trellis_adjacency = trellis_adjacency(i_input,:);
+        current_trellis_output = trellis_output(i_input,:);
+        current_trellis_input = trellis_input(i_input,:);
         
-        % Get the possible transitions from each node
+        %% Get the possible transitions from each node
         possible_transitions = [];
-        for i_node = 1:2:size(current_trellis_states,1)
+        % For every node of the current column in trellis...
+        for i_node = 1:2:size(current_trellis_states,2)
+            current_node_first = current_trellis_states(1,i_node);
+            current_node_second = current_trellis_states(1,i_node + 1);
+            current_node = [current_node_first current_node_second];
             
-            current_node_first = current_trellis_states(i_node);
-            current_node_second = current_trellis_states(i_node + 1);
-            current_node = [current_node_first current_node_second];         
-            
-            for i_next_node = 1:2:size(current_trellis_adjacency,1)
+            % ...get every possible next column node and compose the
+            % transition.
+            for i_next_node = 1:2:size(current_trellis_adjacency,2)
             
                 current_next_node_first = current_trellis_adjacency(i_next_node);
                 current_next_node_second = current_trellis_adjacency(i_next_node + 1);
@@ -71,14 +73,68 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
             
         end
         
-        % States that in the next trellis column will have input edges
+        %% Get the possible transitions output
+        possible_outputs = [];
+        % For every possible trasition...
+        for i_transition = 1:size(possible_transitions,1)
+            
+            % ...and search the transitiona that generated it
+            for i_state = 1:size(STATES,1)
+                
+                each_state_first = STATES(i_state,1);
+                each_state_second = STATES(i_state,2);
+                each_state = [each_state_first each_state_second];
+                
+                next_nodes = STATES_ADJACENCY(i_state,:);
+                
+                for i_next_node = 1:2:size(next_nodes,2)
+            
+                    each_next_node_first = next_nodes(i_next_node);
+                    each_next_node_second = next_nodes(i_next_node + 1);
+                    each_next_node = [each_next_node_first each_next_node_second];
+                    
+                    each_transition = [each_state each_next_node];
+                    
+                    if isequal(each_transition, possible_transitions(i_transition,:))
+                        
+                        % Found
+                        found_output_first = STATES_OUTPUT(i_state, i_next_node);
+                        found_output_second = STATES_OUTPUT(i_state, i_next_node + 1);
+                        found_output = [found_output_first found_output_second];
+                        possible_outputs(end+1,:) = found_output;
+                        
+                    end
+                
+                end
+                
+            end
+            
+        end
+        
+        %% Calculate weights of every transition
+        possible_weights = [];
+        % For every transition, compare input with possible outpus.
+        for i_transition = 1:size(possible_transitions,1)
+            
+            possible_output = possible_outputs(i_transition,:);
+            possible_output_first = char(possible_output(1));
+            possible_output_second = char(possible_output(2));
+            
+            distance_first = first_input-str2double(regexp(possible_output_first,'\d*','match'));
+            distance_second = second_input-str2double(regexp(possible_output_second,'\d*','match'));
+            
+            possible_weights(end + 1,:) = distance_first^2 + distance_second^2;
+            
+        end
+        
+        
+        %% States that in the next trellis column will have input edges
         states_with_transitions = {};
         
         % Next trellis column of nodes
         trellis(i_input + 1) = {states_with_transitions, STATES_ADJACENCY, STATES_OUTPUT, STATES_INPUT};
         
     end
-    
     
     
     % 2)  Evaluate those edges weight and save path.
