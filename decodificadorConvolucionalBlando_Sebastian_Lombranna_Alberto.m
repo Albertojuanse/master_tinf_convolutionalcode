@@ -19,7 +19,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
     %% Decoder preparation
     input_size = size(decoderIn,2);
     extendedDecoderOut = zeros(abs(input_size/2), 1); % Ignored an possible odd input
-    
+    WORD_SIZE = 2;
     STATES =            [   '00'  ;   '01'  ;   '10'  ;   '11'  ];
     STATES_ADJACENCY =  ['00','10';'00','10';'01','11';'01','11'];
     STATES_OUTPUT =     ['00','11';'11','00';'10','01';'01','10'];
@@ -28,17 +28,20 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
     % Collections for saving the used states, acumulated path cost...; 
     % the trellis diagram. Note that the zeros and ones strings here
     % represent boobleans
-    trellis_states = zeros(abs(input_size/2),4);
+    trellis_width = abs(input_size/2);
+    trellis_states = zeros(trellis_width,size(STATES, 1));
     trellis_states(1,:) = '1000';               % Boolean coding of states
-    trellis_adjacency = zeros(abs(input_size/2),8);
+    trellis_adjacency = zeros(trellis_width, size(STATES_ADJACENCY,1)*abs(size(STATES_ADJACENCY, 2)/WORD_SIZE));
     trellis_adjacency(1,:) = '11000000';
+    trellis_nodes_weights = ones(trellis_width, size(STATES_ADJACENCY,1)*abs(size(STATES_ADJACENCY, 2)/WORD_SIZE));
+    trellis_nodes_weights = trellis_nodes_weights * (-1);
     
     %trellis_states(end+1,:) = STATES(2,:);
     
     %% Decoding
     
     % For every pair of inputs
-    for i_input = 1:2:input_size
+    for i_input = 1:WORD_SIZE:input_size
         
         first_input = decoderIn(i_input);
         second_input = decoderIn(i_input + 1);
@@ -60,7 +63,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                 current_trellis_states = [current_trellis_states STATES(i_enum_state,:)];
                 
                 % Add these adjacencies
-                for i_node = 1:2:size(STATES_ADJACENCY,2)
+                for i_node = 1:WORD_SIZE:size(STATES_ADJACENCY,2)
                     if isequal(trellis_adjacency(i_input,i_enum_adjacency), '1')
                         current_trellis_adjacency_first = STATES_ADJACENCY(i_enum_state,i_node);
                         current_trellis_adjacency_second = STATES_ADJACENCY(i_enum_state,i_node+1);
@@ -76,14 +79,14 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
         %% Get the possible transitions from each node
         possible_transitions = [];
         % For every node of the current column in trellis...
-        for i_node = 1:2:size(current_trellis_states,2)
+        for i_node = 1:WORD_SIZE:size(current_trellis_states,2)
             current_node_first = current_trellis_states(1,i_node);
             current_node_second = current_trellis_states(1,i_node + 1);
             current_node = [current_node_first current_node_second];
             
             % ...get every possible next column node and compose the
             % transition.
-            for i_next_node = 1:2:size(current_trellis_adjacencies,2)
+            for i_next_node = 1:WORD_SIZE:size(current_trellis_adjacencies,2)
             
                 current_next_node_first = current_trellis_adjacencies(i_next_node);
                 current_next_node_second = current_trellis_adjacencies(i_next_node + 1);
@@ -109,7 +112,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                 
                 next_nodes = STATES_ADJACENCY(i_state,:);
                 
-                for i_next_node = 1:2:size(next_nodes,2)
+                for i_next_node = 1:WORD_SIZE:size(next_nodes,2)
                                 
                     each_next_node_first = next_nodes(i_next_node);
                     each_next_node_second = next_nodes(i_next_node + 1);
@@ -141,7 +144,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
             current_transition = possible_transitions(i_transition,:);
             
             % ...get every possible next node...
-            current_next_node = current_transition(1,3:4);
+            current_next_node = current_transition(1,1+WORD_SIZE:2*WORD_SIZE);
             
             % ...and search its possible transitions.            
             % For every node of the current column in trellis...
@@ -155,7 +158,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                 % ...get every possible next column node...
                 next_nodes = STATES_ADJACENCY(i_state,:);
                 
-                for i_next_node = 1:2:size(next_nodes,2)
+                for i_next_node = 1:WORD_SIZE:size(next_nodes,2)
 
                     % ... and if is equals to the state, set is true.
                     if isequal(current_next_node, each_state)
@@ -188,8 +191,47 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
         end
         
         %% Asign the weights to the next column node
-        
-        
+        % Evaluate each transition and asign the weight
+        % For every possible trasition...
+        i_weight = 1;
+        for i_transition = 1:size(possible_transitions,1)
+            
+            current_transition = possible_transitions(i_transition,:);
+            % ...get every possible state and next node...
+            current_state = current_transition(1,1:WORD_SIZE-1);
+            current_next_node = current_transition(1,1+WORD_SIZE:2*WORD_SIZE);
+            
+             % ...and search its possible transitions.            
+            % For every node of the current column in trellis...
+            i_adjacency = 1;
+            for i_state = 1:size(STATES,1)
+                
+                each_state_first = STATES(i_state,1);
+                each_state_second = STATES(i_state,2);
+                each_state = [each_state_first each_state_second];
+                
+                % ...get every possible next column node...
+               next_nodes = STATES_ADJACENCY(i_state,:);
+                
+                for i_next_node = 1:WORD_SIZE:size(next_nodes,2)
+                                
+                    each_next_node_first = next_nodes(i_next_node);
+                    each_next_node_second = next_nodes(i_next_node + 1);
+                    each_next_node = [each_next_node_first each_next_node_second];
+                    
+                    each_transition = [each_state each_next_node];
+                    
+                    if isequal(each_transition, possible_transitions(i_transition,:))
+                        trellis_nodes_weights(i_input + 1, i_adjacency) = possible_weights(i_weight,1);
+                        i_weight = i_weight + 1;
+                    end
+                    i_adjacency = i_adjacency + 1;
+
+                end
+                
+            end
+            
+        end
         
         %% States that in the next trellis column will have input edges
         states_with_transitions = {};
