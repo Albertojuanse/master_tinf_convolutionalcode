@@ -28,7 +28,9 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
     % Collections for saving the used states, acumulated path cost...; 
     % the trellis diagram. Note that the zeros and ones strings here
     % represent boobleans
+    trellis_states = zeros(abs(input_size/2),4);
     trellis_states(1,:) = '1000';               % Boolean coding of states
+    trellis_adjacency = zeros(abs(input_size/2),8);
     trellis_adjacency(1,:) = '11000000';
     
     %trellis_states(end+1,:) = STATES(2,:);
@@ -98,7 +100,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
         % For every possible trasition...
         for i_transition = 1:size(possible_transitions,1)
             
-            % ...and search the transitiona that generated it
+            % ...search the transition in states machine
             for i_state = 1:size(STATES,1)
                 
                 each_state_first = STATES(i_state,1);
@@ -108,7 +110,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                 next_nodes = STATES_ADJACENCY(i_state,:);
                 
                 for i_next_node = 1:2:size(next_nodes,2)
-            
+                                
                     each_next_node_first = next_nodes(i_next_node);
                     each_next_node_second = next_nodes(i_next_node + 1);
                     each_next_node = [each_next_node_first each_next_node_second];
@@ -122,13 +124,51 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                         found_output_second = STATES_OUTPUT(i_state, i_next_node + 1);
                         found_output = [found_output_first found_output_second];
                         possible_outputs(end+1,:) = found_output;
-                        
+
                     end
-                
+                    
                 end
                 
             end
             
+        end
+        
+        %% Asign next trellis iteration adjacencies
+        trellis_adjacency(i_input + 1, :) = '00000000';
+        % For every possible trasition...
+        for i_transition = 1:size(possible_transitions,1)
+            
+            current_transition = possible_transitions(i_transition,:);
+            
+            % ...get every possible next node...
+            current_next_node = current_transition(1,3:4);
+            
+            % ...and search its possible transitions.            
+            % For every node of the current column in trellis...
+            i_adjacency = 1;
+            for i_state = 1:size(STATES,1)
+                
+                each_state_first = STATES(i_state,1);
+                each_state_second = STATES(i_state,2);
+                each_state = [each_state_first each_state_second];
+                
+                % ...get every possible next column node...
+                next_nodes = STATES_ADJACENCY(i_state,:);
+                
+                for i_next_node = 1:2:size(next_nodes,2)
+
+                    % ... and if is equals to the state, set is true.
+                    if isequal(current_next_node, each_state)
+                    
+                        trellis_adjacency(i_input + 1, i_adjacency) = '1';
+                    
+                    end
+                    i_adjacency = i_adjacency + 1;
+
+                end
+                
+            end
+        
         end
         
         %% Calculate weights of every transition
