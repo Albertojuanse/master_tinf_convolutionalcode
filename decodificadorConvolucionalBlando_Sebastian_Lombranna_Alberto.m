@@ -56,6 +56,8 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
         %% Get the possible transitions from each active node
         possible_transitions = [];
         bool_current_trellis_states = trellis_states(i_trellis_column,:);
+        trellis_adjacency(i_trellis_column + 1, :) = '00000000'; % For asign next trellis iteration 
+        trellis_states(i_trellis_column + 1, :) = '0000';
         % For every state that must be eveluated in this column...
         for i_state = 1:size(bool_current_trellis_states,2)
             bool_current_trellis_state = bool_current_trellis_states(1,i_state);
@@ -78,6 +80,20 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                         %% Get the possible transitions output
                         current_output = STATES_OUTPUT(i_transition,:);
                         
+                        %% Asign next trellis iteration adjacencies and states
+                        for i_each_transition = 1:size(STATES_ADJACENCY,1)
+                            each_transition = STATES_ADJACENCY(i_each_transition,:);
+                            each_next_state = each_transition(1,1:WORD_SIZE);
+                            if equals(each_next_state,current_next_state)
+                                trellis_adjacency(i_trellis_column + 1, i_each_transition) = '1';
+                                for i_each_state = 1:size(STATES,2)
+                                    each_state = STATES(i_each_state,:);
+                                    if equals(each_next_state,each_state)
+                                        trellis_states(i_trellis_column + 1, i_state) = '1';
+                                    end
+                                end
+                            end
+                        end
                         
                     end                    
                 end
@@ -85,46 +101,6 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
             end
         end
 
-        %% Asign next trellis iteration adjacencies and states
-        trellis_adjacency(i_trellis_column + 1, :) = '00000000';
-        trellis_states(i_trellis_column + 1, :) = '0000';
-        % For every possible trasition...
-        for i_transition = 1:size(possible_transitions,1)
-            
-            current_transition = possible_transitions(i_transition,:);
-            
-            % ...get every possible next node...
-            current_state = current_transition(1,1:WORD_SIZE-1);
-            current_next_node = current_transition(1,1+WORD_SIZE:2*WORD_SIZE);
-            
-            % ...and search its possible transitions.            
-            % For every node of the current column in trellis...
-            i_adjacency = 1;
-            for i_state = 1:size(STATES,1)
-                
-                each_state_first = STATES(i_state,1);
-                each_state_second = STATES(i_state,2);
-                each_state = [each_state_first each_state_second];
-                
-                % ...get every possible next column node...
-                next_nodes = STATES_ADJACENCY(i_state,:);
-                
-                for i_next_node = 1:WORD_SIZE:size(next_nodes,2)
-
-                    % ... and if is equals to the state, set is true.
-                    if isequal(current_next_node, each_state)
-                    
-                        trellis_adjacency(i_trellis_column + 1, i_adjacency) = '1';                        
-                        trellis_states(i_trellis_column + 1, i_state) = '1';
-                        
-                    end
-                    i_adjacency = i_adjacency + 1;
-
-                end
-                
-            end
-        
-        end
         
         %% Calculate weights of every transition
         possible_weights = [];
