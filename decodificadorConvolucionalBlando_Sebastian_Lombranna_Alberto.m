@@ -75,53 +75,16 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                         current_state = current_transition(1,1:WORD_SIZE);
                         current_next_state = current_transition(1,WORD_SIZE+1:2*WORD_SIZE);
                         
-                        current_transition = [current_state current_next_state];
-                        possible_transitions(end+1,:) = current_transition;
+                        %% Get the possible transitions output
+                        current_output = STATES_OUTPUT(i_transition,:);
+                        
                         
                     end                    
                 end
                 
             end
         end
-        
-        %% Get the possible transitions output
-        possible_outputs = [];
-        % For every possible trasition...
-        for i_transition = 1:size(possible_transitions,1)
-            
-            % ...search the transition in states machine
-            for i_state = 1:size(STATES,1)
-                
-                each_state_first = STATES(i_state,1);
-                each_state_second = STATES(i_state,2);
-                each_state = [each_state_first each_state_second];
-                
-                next_nodes = STATES_ADJACENCY(i_state,:);
-                
-                for i_next_node = 1:WORD_SIZE:size(next_nodes,2)
-                                
-                    each_next_node_first = next_nodes(i_next_node);
-                    each_next_node_second = next_nodes(i_next_node + 1);
-                    each_next_node = [each_next_node_first each_next_node_second];
-                    
-                    each_transition = [each_state each_next_node];
-                    
-                    if isequal(each_transition, possible_transitions(i_transition,:))
-                        
-                        % Found
-                        found_output_first = STATES_OUTPUT(i_state, i_next_node);
-                        found_output_second = STATES_OUTPUT(i_state, i_next_node + 1);
-                        found_output = [found_output_first found_output_second];
-                        possible_outputs(end+1,:) = found_output;
 
-                    end
-                    
-                end
-                
-            end
-            
-        end
-        
         %% Asign next trellis iteration adjacencies and states
         trellis_adjacency(i_trellis_column + 1, :) = '00000000';
         trellis_states(i_trellis_column + 1, :) = '0000';
