@@ -35,6 +35,13 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
     trellis_adjacency(1,:) = '11000000';
     trellis_nodes_weights = ones(trellis_width, size(STATES_ADJACENCY,1));
     trellis_nodes_weights = trellis_nodes_weights * (-1);
+    trellis_nodes_paths = ones(trellis_width, size(STATES, 1));
+    trellis_nodes_paths = trellis_nodes_paths * 99999;
+    for i_state = 1:size(trellis_states,2)
+        if isequal(trellis_states(1,i_state),'1')
+            trellis_nodes_paths(1,i_state) = 0;
+        end
+    end
     
     %trellis_states(end+1,:) = STATES(2,:);
     
@@ -58,7 +65,6 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
         bool_current_trellis_states = trellis_states(i_trellis_column,:);
         trellis_adjacency(i_trellis_column + 1, :) = '00000000'; % For asign next trellis iteration 
         trellis_states(i_trellis_column + 1, :) = '0000';
-        trellis_nodes_weights(i_trellis_column + 1, :) = ones(1, size(STATES_ADJACENCY,1)) * (-1);
         % For every state that must be eveluated in this column...
         for i_state = 1:size(bool_current_trellis_states,2)
             bool_current_trellis_state = bool_current_trellis_states(1,i_state);
@@ -109,14 +115,53 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                         current_weight = distance_first^2 + distance_second^2;
                         
                         %% Asign the weights to the next column node
-                        trellis_nodes_weights(i_trellis_column+1, i_transition) = current_weight;
-                        
-                    end                    
+                        trellis_nodes_weights(i_trellis_column + 1, i_transition) = current_weight;
+                                                
+                    end
                 end
                 
             end
         end
-        trellis_nodes_weights
+        
+        %% Decide and asign the accumulated paths to the nodes
+        % For every weight calculated...
+        trellis_nodes_paths(i_trellis_column + 1, i_transition);
+        current_weights = trellis_nodes_weights(i_trellis_column + 1, :);
+        for i_transition = 1:size(current_weights,2)
+            
+            %% Evaluate current transition states
+            current_transition = STATES_ADJACENCY(i_transition,:);
+            current_state = current_transition(1,1:WORD_SIZE);            
+            current_next_state = current_transition(1,WORD_SIZE+1:2*WORD_SIZE);
+            current_weight = current_weights(i_transition,1);
+            
+            % ...get the state from which the transition starts and
+            %    get the state to which the transition aims...
+            for i_state = size(STATES,2)
+                if isequal(current_state, STATES(i_state,:))
+                    i_current_state = i_state;
+                end
+                if isequal(current_next_state, STATES(i_state,:))
+                    i_current_next_state = i_state;
+                end
+            end            
+            % ...and if it is so, decide if this is the lowest.
+            
+            %% Get path value from the state from the transition starts
+            current_state_path = i_adjacency(1,i_current_state);
+            
+            %% Calculate path value to the state to the transition aims
+            current_next_state_path = current_state_path + current_weight;
+            
+            %% Decide if this one is lower than the accumulated path in node
+            each_next_state_path = trellis_nodes_paths(i_trellis_column + 1, i_current_next_state);
+            if current_next_state_path < each_next_state_path
+                trellis_nodes_paths(i_trellis_column + 1, i_current_next_state) = current_next_state_path;
+            end
+            
+            %% TO DO: DECIDIR QUE NODOS SE BORRAN Y CAMINO ATRÁS
+            
+        end
         
         %% Iterations
         i_trellis_column = i_trellis_column + 1;
