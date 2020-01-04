@@ -77,45 +77,42 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                         current_state = current_transition(1,1:WORD_SIZE);
                         current_next_state = current_transition(1,WORD_SIZE+1:2*WORD_SIZE);
                         
-                        %% Get the possible transitions output
+                        %% Get the possible transitions outputç
+                        % Get the current transition output in the state
+                        % machine.
                         current_output = STATES_OUTPUT(i_transition,:);
                         
                         %% Asign next trellis iteration adjacencies and states
+                        % Identify each transition and states and set them
+                        % as true to check them in the next trellis column.
                         for i_each_transition = 1:size(STATES_ADJACENCY,1)
                             each_transition = STATES_ADJACENCY(i_each_transition,:);
                             each_next_state = each_transition(1,1:WORD_SIZE);
-                            if equals(each_next_state,current_next_state)
+                            if isequal(each_next_state,current_next_state)
                                 trellis_adjacency(i_trellis_column + 1, i_each_transition) = '1';
                                 for i_each_state = 1:size(STATES,2)
                                     each_state = STATES(i_each_state,:);
-                                    if equals(each_next_state,each_state)
+                                    if isequal(each_next_state,each_state)
                                         trellis_states(i_trellis_column + 1, i_state) = '1';
                                     end
                                 end
                             end
                         end
                         
+                        %% Calculate weights of every transition
+                        % For every transition, compare input with possible outpus.
+                        output_first = char(current_output(1));
+                        output_second = char(current_output(2));
+                        distance_first = first_input-str2double(regexp(output_first,'\d*','match'));
+                        distance_second = second_input-str2double(regexp(output_second,'\d*','match'));
+                        current_weight = distance_first^2 + distance_second^2
+                        
+                        %% 
+                        
                     end                    
                 end
                 
             end
-        end
-
-        
-        %% Calculate weights of every transition
-        possible_weights = [];
-        % For every transition, compare input with possible outpus.
-        for i_transition = 1:size(possible_transitions,1)
-            
-            possible_output = possible_outputs(i_transition,:);
-            possible_output_first = char(possible_output(1));
-            possible_output_second = char(possible_output(2));
-            
-            distance_first = first_input-str2double(regexp(possible_output_first,'\d*','match'));
-            distance_second = second_input-str2double(regexp(possible_output_second,'\d*','match'));
-            
-            possible_weights(end + 1,:) = distance_first^2 + distance_second^2;
-            
         end
         
         %% Asign the weights to the next column node
