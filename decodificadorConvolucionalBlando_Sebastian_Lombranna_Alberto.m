@@ -42,6 +42,8 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
             trellis_nodes_paths(1,i_state) = 0;
         end
     end
+    trellis_nodes_lower_transitions = ones(trellis_width,size(STATES,1));
+    trellis_nodes_lower_transitions = trellis_nodes_lower_transitions * (-1);
     
     %trellis_states(end+1,:) = STATES(2,:);
     
@@ -125,19 +127,18 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
         
         %% Decide and asign the accumulated paths to the nodes
         % For every weight calculated...
-        trellis_nodes_paths(i_trellis_column + 1, i_transition);
         current_weights = trellis_nodes_weights(i_trellis_column + 1, :);
         for i_transition = 1:size(current_weights,2)
             
             %% Evaluate current transition states
             current_transition = STATES_ADJACENCY(i_transition,:);
-            current_state = current_transition(1,1:WORD_SIZE);            
+            current_state = current_transition(1,1:WORD_SIZE);
             current_next_state = current_transition(1,WORD_SIZE+1:2*WORD_SIZE);
-            current_weight = current_weights(i_transition,1);
+            current_weight = current_weights(1,i_transition);
             
             % ...get the state from which the transition starts and
             %    get the state to which the transition aims...
-            for i_state = size(STATES,2)
+            for i_state = 1:size(STATES,1)
                 if isequal(current_state, STATES(i_state,:))
                     i_current_state = i_state;
                 end
@@ -148,7 +149,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
             % ...and if it is so, decide if this is the lowest.
             
             %% Get path value from the state from the transition starts
-            current_state_path = i_adjacency(1,i_current_state);
+            current_state_path = trellis_nodes_paths(i_trellis_column,i_current_state);
             
             %% Calculate path value to the state to the transition aims
             current_next_state_path = current_state_path + current_weight;
@@ -157,9 +158,13 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
             each_next_state_path = trellis_nodes_paths(i_trellis_column + 1, i_current_next_state);
             if current_next_state_path < each_next_state_path
                 trellis_nodes_paths(i_trellis_column + 1, i_current_next_state) = current_next_state_path;
+                trellis_nodes_lower_transitions(i_trellis_column + 1, i_current_next_state) = i_transition;
             end
-            
-            %% TO DO: DECIDIR QUE NODOS SE BORRAN Y CAMINO ATRÁS
+            if current_next_state_path == each_next_state_path
+                bool_weights_equals = true;
+            end
+
+            %% TO DO: DELETE IMPOSSIBLE PATHS
             
         end
         
@@ -168,23 +173,46 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
         
     end
     
-    % 2)  Evaluate those edges weight and save path.
-    % 3)  Evaluate next-step nodes; discard less-weighted.
-    % 3b) Follow less-weighted edges.
-    % 3c) If linked node is empty discard iteratively
+    %% Get lower paths transitions way back
+    input_inverse_secuence = zeros(1,trellis_width-1);
+    
+    % Locate the lower path accumulated in the last iteration
+    last_iteration_lower_path = 99999;
+    last_iteration_lower_path_i_state = -1;
+    for i_state = 1:size(STATES,1)
+        if trellis_nodes_paths(trellis_width,i_state) < last_iteration_lower_path
+            last_iteration_lower_path = trellis_nodes_paths(trellis_width,i_state);
+            last_iteration_lower_path_i_state = i_state;
+        end
+    end
+    % Do the way back
+    i_current_next_state = last_iteration_lower_path_i_state;
+    for i_reverse_input = fliplr(2:1:trellis_width)
+        
+        % Get transition, its states and its input
+        i_transition = trellis_nodes_lower_transitions(i_reverse_input,i_current_next_state);
+        current_transition = STATES_ADJACENCY(i_transition,:);
+        current_input = STATES_INPUT(i_transition,:)
+        current_state = current_transition(1,1:WORD_SIZE);
+        
+        % Save the input that triggered that transition
+        input_inverse_secuence(1,i_reverse_input) = str2double(regexp(current_input,'\d*','match'));
+        
+        % Get the next state index for the next transition
+        for i_state = 1:size(STATES,1)
+            each_state = STATES(i_state,:);
+            if isequal(current_state,each_state)
+                i_current_next_state = i_state;
+            end
+        end
+        
+    end
     
     %% Post-treatment
     fprintf('[CONV] The size of decoderIn is %.2f \n', size(decoderIn, 2));
     extendedDecoderOut = fliplr(input_inverse_secuence);
     fprintf('[CONV] The size of extendedDecoderOut is %.2f \n', size(extendedDecoderOut, 2));
-    if bits_left > 0
-        decoderOut = extendedDecoderOut(1:(size(extendedDecoderOut,2)-1));
-        % Tail bits and 'rest first word'
-        decoderOut = decoderOut(1:(size(decoderOut,2) - (size(TB,2))-1) );
-    else
-        % Tail bits and 'rest first word'
-        decoderOut = extendedDecoderOut(1:(size(extendedDecoderOut,2) - (size(TB,2))) );        
-    end
+    decoderOut = extendedDecoderOut(1:(size(extendedDecoderOut,2) - (size(TB,2))) );
     fprintf('[CONV] The size of decoderOut is %.2f \n', size(decoderOut, 2));
     
 end
