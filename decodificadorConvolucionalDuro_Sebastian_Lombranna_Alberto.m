@@ -12,293 +12,212 @@ function decoderOut = decodificadorConvolucionalDuro_Sebastian_Lombranna_Alberto
     % number of design decisitions must be don
     
     %% Variable declaration and initialization
-    ALPHABET = [0 1];           % Source alphabet
-    DISTRIBUTION = [0.5 0.5];   % A priori symbol distribution
-    THRESHOLDS = [0.5];         % Decisor's thresholds; average
     k = 3;                      % Number of registers in convolutional coder
     TB = zeros(1, k);           % Tail bits
     
-    %% Decisor
-    % In a schem of hard decoding, the stream of symbols must be decided as a alphabet's
-    % symbols before the decoding.
-    decidedDecoderIn = zeros(1, size(decoderIn, 2));
-    for i = 1:size(decoderIn, 2)
-        for j = size(THRESHOLDS, 2)
-            if decoderIn(i) >= THRESHOLDS(j)
-                decidedDecoderIn(i) = ALPHABET(j+1);
-            else
-                decidedDecoderIn(i) = ALPHABET(j);
-            end
+    %% Decoder preparation
+    input_size = size(decoderIn,2);
+    extendedDecoderOut = zeros(abs(input_size/2), 1); % Ignored an possible odd input
+    WORD_SIZE = 2;
+    STATES =            [        '00'       ;        '01'       ;        '10'       ;        '11'       ];
+    STATES_ADJACENCY =  ['00','00';'00','10';'01','00';'01','10';'10','01';'10','11';'11','01';'11','11'];
+    STATES_OUTPUT =     [   '00'  ;   '11'  ;   '11'  ;   '00'  ;   '10'  ;   '01'  ;   '01'  ;   '10'  ];
+    STATES_INPUT =      [   '0'   ;   '1'   ;   '0'   ;   '1'   ;   '0'   ;   '1'   ;   '0'   ;   '1'   ];
+    
+    % Collections for saving the used states, acumulated path cost...; 
+    % the trellis diagram. Note that the zeros and ones strings here
+    % represent boobleans
+    trellis_width = abs(input_size/2) + 1;
+    trellis_states = zeros(trellis_width,size(STATES, 1));
+    trellis_states(1,:) = '1000';               % Boolean coding of states
+    trellis_adjacency = zeros(trellis_width, size(STATES_ADJACENCY,1));
+    trellis_adjacency(1,:) = '11000000';
+    trellis_nodes_weights = ones(trellis_width, size(STATES_ADJACENCY,1));
+    trellis_nodes_weights = trellis_nodes_weights * (-1);
+    trellis_nodes_paths = ones(trellis_width, size(STATES, 1));
+    trellis_nodes_paths = trellis_nodes_paths * 99999;
+    for i_state = 1:size(trellis_states,2)
+        if isequal(trellis_states(1,i_state),'1')
+            trellis_nodes_paths(1,i_state) = 0;
         end
     end
+    trellis_nodes_lower_transitions = ones(trellis_width,size(STATES,1));
+    trellis_nodes_lower_transitions = trellis_nodes_lower_transitions * (-1);
     
-    %% Decoder preparation
-              
-    STATES = [[0 0]; [0 1]; [1 0] ;[1 1]];
-    STATES_ADJACENCY = [[[0 0] ;[1 0]]; [[0 0]; [1 0]]; [[0 1]; [1 1]]; [[0 1]; [1 1]]];
-    STATES_OUTPUT = [[[0 0] [1 1]], [[1 1] [0 0]], [[1 0] [0 1]], [[0 1] [1 0]]];
-    STATES_INPUT = [[0 1], [0 1], [0 1], [0 1]];
-    
-    STATES =            {'000';         '001';         '010';         '011';         '100';         '101';         '110';         '111'       };
-    STATES_ADJACENCY = {{'000','100'}, {'000','100'}, {'001','101'}, {'001','101'}, {'010','110'}, {'010','110'}, {'011','111'}, {'011','111'}};
-    STATES_OUTPUT =    {{'00','11'},   {'00','11'},   {'11','00'},   {'11','00'},   {'10','01'},   {'10','01'},   {'01','10'},   {'01','10'}  };
-    STATES_INPUT =     {{'0','1'},     {'0','1'},     {'0','1'},     {'0','1'},     {'0','1'},     {'0','1'},     {'0','1'},     {'0','1'}    };
-    
-    % The decoder input must be even with the word size...
-    number_states = size(STATES,1);
-    state_size = size(STATES{1},2);
-    word_size = size(STATES_OUTPUT{1}{1},2);
-    bits_excess = mod(size(decidedDecoderIn,2), word_size);
-    if bits_excess ~= 0
-        bits_left = word_size - bits_excess;
-    else
-        bits_left = 0;
-    end    
-    extendedDecidedDecoderIn = [decidedDecoderIn];
-    for i = 1:bits_left
-        extendedDecidedDecoderIn(end+1)=0;
-    end
-    % ...and start in rest
-    first_state_array = zeros(1, word_size);
-    extendedDecidedDecoderIn = [first_state_array extendedDecidedDecoderIn];
-    
-    % Collection for saving the acumulated path cost; an extra column for
-    % the last analysis of edges
-    % two dimensions for trellis,
-    % third dimension for min{distance}[(distance, src_node, tar_node)]
-    trellis_nodes = zeros(number_states, size(extendedDecidedDecoderIn,2)/word_size+1, 2);
-    for n1 = 1:size(trellis_nodes,1)
-        for n2 = 1:size(trellis_nodes, 2)
-            for n3 = 1:size(trellis_nodes, 3)
-                trellis_nodes(n1, n2, n3) = -1;
-            end
-        end        
+    % Threshold decision
+    for i_input = 1:input_size
+        if decoderIn(i_input) > 0.5
+            decoderIn(i_input) = 1;
+        else
+            decoderIn(i_input) = 0;
+        end
     end
     
     %% Decoding
     
-    % 1) trellis evaluation
-    
-    first_iteration = true;
-    % for every recived word
-    for i_income_word = 1:size(extendedDecidedDecoderIn,2)/word_size
-        income_word = [extendedDecidedDecoderIn(1, word_size*i_income_word-1) extendedDecidedDecoderIn(1, word_size*i_income_word)];
+    % For every pair of inputs
+    i_trellis_column = 1;
+    for i_input = 1:WORD_SIZE:input_size
         
-        % for every state in the state machine...
-        for i_each_state = 1:number_states
-            
-            % ... get the node's information (distance, src_node, tar_node) 
-            trellis_node = trellis_nodes(i_each_state, i_income_word);
-            trellis_node_distance = trellis_node(1);
-            
-            % if the state's node is still alive, but not in the first iteration
-            if not(trellis_node == -1) || first_iteration
+        first_input = decoderIn(i_input);
+        second_input = decoderIn(i_input + 1);
+        
+        % The collections in the current trellis column are
+        % -> the states that must be evaluated,
+        % -> its adjacencies,
+        % -> the distances between what's revived and what's can be, and
+        % -> 
+        
+        %% Get the possible transitions from each active node
+        possible_transitions = [];
+        bool_current_trellis_states = trellis_states(i_trellis_column,:);
+        trellis_adjacency(i_trellis_column + 1, :) = '00000000'; % For asign next trellis iteration 
+        trellis_states(i_trellis_column + 1, :) = '0000';
+        % For every state that must be eveluated in this column...
+        for i_state = 1:size(bool_current_trellis_states,2)
+            bool_current_trellis_state = bool_current_trellis_states(1,i_state);
+            if isequal(bool_current_trellis_state, '1')
                 
-                src_node = i_each_state;
+                current_trellis_state = STATES(i_state,:);
                 
-                % for every possible transition from node in the state machine...
-                for i_possible_tar_node = 1:size(STATES_ADJACENCY{src_node},2)
-                    
-                    tar_node_string = STATES_ADJACENCY{src_node}{i_possible_tar_node};
-                    % get the state machine output for calculations
-                    with_output = STATES_OUTPUT{src_node}{i_possible_tar_node};
-                    
-                    % search for the real index of this node; in state
-                    % machine not every transitions is possible, and the
-                    % real index of it is needed for saving the path
-                    real_tar_node = -1;
-                    for j_each_state = 1:number_states
-                        if strcmp(STATES{j_each_state},tar_node_string)
-                            real_tar_node = j_each_state;
-                        end
-                    end
-                    
-                    % ...search in every target state in trellis...
-                    for k_each_state = 1:number_states
+                % For every possible transitions to node of the following 
+                % column in trellis...
+                bool_current_transitions = trellis_adjacency(i_trellis_column,:);
+                for i_transition = 1:size(bool_current_transitions,2)
+                    bool_current_transition = bool_current_transitions(1,i_transition);
+                    if isequal(bool_current_transition, '1')
                         
-                        each_tar_node = STATES{k_each_state};
+                        current_transition = STATES_ADJACENCY(i_transition,:);
                         
-                        % ...check if it is the possible one
-                        if strcmp(tar_node_string, each_tar_node)
-                            
-                            % This code is reached when the transition in
-                            % trellis is possible from 'src_node' to 
-                            % 'real_tar_node', with weight 'with_output'
-                            
-                            % Thus, its distance with the incoming word
-                            % must be calculated and if it is the minimum
-                            % path transition must be decided
-                            
-                            % Do the metric; for each bit of the symbol
-                            with_output_array = zeros(1, word_size);
-                            for i_each_bit = 1:word_size
-                                with_output_array(i_each_bit) = str2double(with_output(i_each_bit));
-                            end
-                            distance = hammingDistance(income_word, with_output_array);
-                            
-                            % acumulate distances if the node is alive
-                            if trellis_node(1) >= 0
-                                distance = distance + trellis_node_distance;
-                            end
-                                
-                            % check if the 'tar_node' in next columns in trellis is empty/not alive...
-                            
-                            if trellis_nodes(real_tar_node, i_income_word+1) == -1
-                                
-                                % save the (distance, src_node, tar_node) as the node's weight,
-                                trellis_nodes(real_tar_node, i_income_word+1, 1) = distance;
-                                trellis_nodes(real_tar_node, i_income_word+1, 2) = src_node;
-                                
-                            else 
-                                
-                                % ... but if not, decide min{distance}[(distance, src_node, tar_node)]
-                                trellis_tar_node_distance = trellis_nodes(real_tar_node, i_income_word+1, 1);
-                                if  distance < trellis_tar_node_distance
-                                    trellis_nodes(real_tar_node, i_income_word+1, 1) = distance;
-                                    trellis_nodes(real_tar_node, i_income_word+1, 2) = src_node;
-                                end
-                                if  distance == trellis_tar_node_distance
-                                    r = randn();
-                                    if r > 0
-                                        trellis_nodes(real_tar_node, i_income_word+1, 2) = src_node;
+                        current_state = current_transition(1,1:WORD_SIZE);
+                        current_next_state = current_transition(1,WORD_SIZE+1:2*WORD_SIZE);
+                        
+                        %% Get the possible transitions outputç
+                        % Get the current transition output in the state
+                        % machine.
+                        current_output = STATES_OUTPUT(i_transition,:);
+                        
+                        %% Asign next trellis iteration adjacencies and states
+                        % Identify each transition and states and set them
+                        % as true to check them in the next trellis column.
+                        for i_each_transition = 1:size(STATES_ADJACENCY,1)
+                            each_transition = STATES_ADJACENCY(i_each_transition,:);
+                            each_next_state = each_transition(1,1:WORD_SIZE);
+                            if isequal(each_next_state,current_next_state)
+                                trellis_adjacency(i_trellis_column + 1, i_each_transition) = '1';
+                                for i_each_state = 1:size(STATES,2)
+                                    each_state = STATES(i_each_state,:);
+                                    if isequal(each_next_state,each_state)
+                                        trellis_states(i_trellis_column + 1, i_state) = '1';
                                     end
                                 end
-                                
                             end
-                            
                         end
                         
+                        %% Calculate weights of every transition
+                        % For every transition, compare input with possible outpus.
+                        output_first = char(current_output(1));
+                        output_second = char(current_output(2));
+                        distance_first = abs(first_input-str2double(regexp(output_first,'\d*','match')));
+                        distance_second = abs(second_input-str2double(regexp(output_second,'\d*','match')));
+                        current_weight = distance_first + distance_second;
+                        
+                        %% Asign the weights to the next column node
+                        trellis_nodes_weights(i_trellis_column + 1, i_transition) = current_weight;
+                                                
                     end
-                    
                 end
                 
             end
+        end
+        
+        %% Decide and asign the accumulated paths to the nodes
+        % For every weight calculated...
+        current_weights = trellis_nodes_weights(i_trellis_column + 1, :);
+        for i_transition = 1:size(current_weights,2)
             
-            % start in rest; only evaluate the first state
-            if first_iteration
-                break;
+            %% Evaluate current transition states
+            current_transition = STATES_ADJACENCY(i_transition,:);
+            current_state = current_transition(1,1:WORD_SIZE);
+            current_next_state = current_transition(1,WORD_SIZE+1:2*WORD_SIZE);
+            current_weight = current_weights(1,i_transition);
+            
+            % ...get the state from which the transition starts and
+            %    get the state to which the transition aims...
+            for i_state = 1:size(STATES,1)
+                if isequal(current_state, STATES(i_state,:))
+                    i_current_state = i_state;
+                end
+                if isequal(current_next_state, STATES(i_state,:))
+                    i_current_next_state = i_state;
+                end
             end
+            % ...and if it is so, decide if this is the lowest.
+            
+            %% Get path value from the state from the transition starts
+            current_state_path = trellis_nodes_paths(i_trellis_column,i_current_state);
+            
+            %% Calculate path value to the state to the transition aims
+            current_next_state_path = current_state_path + current_weight;
+            
+            %% Decide if this one is lower than the accumulated path in node
+            each_next_state_path = trellis_nodes_paths(i_trellis_column + 1, i_current_next_state);
+            if current_next_state_path < each_next_state_path
+                trellis_nodes_paths(i_trellis_column + 1, i_current_next_state) = current_next_state_path;
+                trellis_nodes_lower_transitions(i_trellis_column + 1, i_current_next_state) = i_transition;
+            end
+            if current_next_state_path == each_next_state_path
+                bool_weights_equals = true;
+            end
+
+            %% TO DO: DELETE IMPOSSIBLE PATHS
             
         end
         
-        first_iteration = false;
+        %% Iterations
+        i_trellis_column = i_trellis_column + 1;
+        
     end
     
-    % 2) path finding
+    %% Get lower paths transitions way back
+    input_secuence = zeros(1,trellis_width-1);
     
-    % find the final state with less accumulated distance
-    min_distance = realmax;
-    min_distance_tar_node = -1;
-    for i_each_state = 1:number_states
-        % last column in trellis is extendedDecidedDecoderIn,2)/2+1
-        each_tar_node_distance = trellis_nodes(i_each_state,size(extendedDecidedDecoderIn,2)/2+1, 1);
-        if each_tar_node_distance < min_distance
-            min_distance = each_tar_node_distance;
-            min_distance_tar_node = i_each_state;
+    % Locate the lower path accumulated in the last iteration
+    last_iteration_lower_path = 99999;
+    last_iteration_lower_path_i_state = -1;
+    for i_state = 1:size(STATES,1)
+        if trellis_nodes_paths(trellis_width,i_state) < last_iteration_lower_path
+            last_iteration_lower_path = trellis_nodes_paths(trellis_width,i_state);
+            last_iteration_lower_path_i_state = i_state;
         end
     end
-    
-    % for every column in trellis, starting from the back
-    first_iteration = true;
-    input_inverse_secuence = zeros(1, size(extendedDecidedDecoderIn,2)/word_size-1);
-    src_node = -1;
-    tar_node = -1;
-    for i_path_node = size(extendedDecidedDecoderIn,2)/word_size-1:-1:1
+    % Do the way back
+    i_current_next_state = last_iteration_lower_path_i_state;
+    for i_reverse_input = fliplr(2:1:trellis_width)
         
-        % The decoder must now decide the minimum distance path and,
-        % for each transition decide what was the input
-        % The transition is from 'src_node' and 'tar_node', where
-        % 'src_node' is stored and 'tar node' is the previus 'src_node'
+        % Get transition, its states and its input
+        i_transition = trellis_nodes_lower_transitions(i_reverse_input,i_current_next_state);
+        current_transition = STATES_ADJACENCY(i_transition,:);
+        current_input = STATES_INPUT(i_transition,:);
+        current_state = current_transition(1,1:WORD_SIZE);
         
-        if first_iteration
-            
-            % retrieve first iteration bits
-            % the target node is the one stored; in first iteration is the
-            % minimum distance one.
-            tar_node = STATES(min_distance_tar_node, 1);
-            tar_node_string = tar_node{1};
-            % the source node is the one stored
-            src_node = trellis_nodes(min_distance_tar_node,i_path_node,2);
-            % save the src_node for the next iteration and get the new one
-            tar_node = src_node;
-            
-            i_transition_input = -1;
-            % for each possible target node reachable from the source node
-            src_node_possibles_tar_node = STATES_ADJACENCY{src_node};
-            for i_src_node_possibles_tar_node = 1:size(src_node_possibles_tar_node,2)
-                
-                src_node_possibles_tar_node_string = src_node_possibles_tar_node{i_src_node_possibles_tar_node};
-                % compare with the target node
-                if strcmp(src_node_possibles_tar_node_string, tar_node_string)
-                    i_transition_input = i_src_node_possibles_tar_node;
-                end
-                
+        % Save the input that triggered that transition
+        input_secuence(1,i_reverse_input) = str2double(regexp(current_input,'\d*','match'));
+        
+        % Get the next state index for the next transition
+        for i_state = 1:size(STATES,1)
+            each_state = STATES(i_state,:);
+            if isequal(current_state,each_state)
+                i_current_next_state = i_state;
             end
-                
-            % get the input
-            input_string = STATES_INPUT{src_node}{i_transition_input};
-            input = str2double(input_string);
-            
-            % save it
-            input_inverse_secuence(i_path_node) = input;
-            
-        else
-            
-            % retrieve first iteration bits
-            % the target node is the one stored; in first iteration is the
-            % minimum distance one.
-            
-            each_tar_node = STATES(tar_node, 1);
-            each_tar_node_string = each_tar_node{1};
-            % the source node is the one stored, except for the first column
-            if i_path_node > 1
-                src_node = trellis_nodes(tar_node,i_path_node,2);
-            else
-                src_node = 1;
-            end
-            % save the src_node for the next iteration and get the new one
-            tar_node = src_node;
-            
-            i_transition_input = -1;
-            % for each possible target node reachable from the source node
-            src_node_possibles_tar_node = STATES_ADJACENCY{src_node};
-            for i_src_node_possibles_tar_node = 1:size(src_node_possibles_tar_node,2)
-            
-                src_node_possibles_tar_node_string = src_node_possibles_tar_node{i_src_node_possibles_tar_node};
-                % compare with the target node
-                if strcmp(src_node_possibles_tar_node_string, each_tar_node_string)
-                    i_transition_input = i_src_node_possibles_tar_node;
-                end
-                
-            end
-            
-            % get the input
-            input_string = STATES_INPUT{src_node}{i_transition_input};
-            input = str2double(input_string);
-            
-            % save it
-            input_inverse_secuence(i_path_node) = input;
-            
         end
-            
-        first_iteration = false;
         
     end
     
     %% Post-treatment
-    fprintf('[CONV] The size of extendedDecidedDecoderIn is %.2f \n', size(extendedDecidedDecoderIn, 2));
-    extendedDecoderOut = fliplr(input_inverse_secuence);
-    fprintf('[CONV] The size of extendedDecoderOut is %.2f \n', size(extendedDecoderOut, 2));
-    if bits_left > 0
-        decoderOut = extendedDecoderOut(1:(size(extendedDecoderOut,2)-1));
-        % Tail bits and 'rest first word'
-        decoderOut = decoderOut(1:(size(decoderOut,2) - (size(TB,2))-1) );
-    else
-        % Tail bits and 'rest first word'
-        decoderOut = extendedDecoderOut(1:(size(extendedDecoderOut,2) - (size(TB,2))) );        
-    end
-    fprintf('[CONV] The size of decoderOut is %.2f \n', size(decoderOut, 2));
-    
+    extendedDecoderOut = input_secuence;
+    decoderOut = extendedDecoderOut(2:(size(extendedDecoderOut,2) - (size(TB,2))) );
+
 end
 
 %% Auxiliar functions

@@ -45,8 +45,6 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
     trellis_nodes_lower_transitions = ones(trellis_width,size(STATES,1));
     trellis_nodes_lower_transitions = trellis_nodes_lower_transitions * (-1);
     
-    %trellis_states(end+1,:) = STATES(2,:);
-    
     %% Decoding
     
     % For every pair of inputs
@@ -210,9 +208,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
     
     %% Post-treatment
     extendedDecoderOut = input_secuence;
-    fprintf('[CONV] The size of extendedDecoderOut is %.2f \n', size(extendedDecoderOut, 2));
     decoderOut = extendedDecoderOut(2:(size(extendedDecoderOut,2) - (size(TB,2))) );
-    fprintf('[CONV] The size of decoderOut is %.2f \n', size(decoderOut, 2));
 
 end
 
