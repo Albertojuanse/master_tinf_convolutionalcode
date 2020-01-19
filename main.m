@@ -4,12 +4,12 @@
 %% Run configuration
 % Source
 SOFT_FLAG = true;  % False for use hard decoding; true for soft decoding.
-SOURCE_PROVIDED = true;
+SOURCE_PROVIDED = false;
 SOURCE = [0 1 1 0 0 0 1 0 1 1 0 0 0];
 SOURCE_LENGTH = 1000;
 
 % Noise
-SIGMA = 0.01;
+SIGMA = 0.5;
 MU = 0;
 
 

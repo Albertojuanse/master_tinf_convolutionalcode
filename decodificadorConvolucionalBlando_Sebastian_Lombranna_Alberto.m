@@ -145,7 +145,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
                 if isequal(current_next_state, STATES(i_state,:))
                     i_current_next_state = i_state;
                 end
-            end            
+            end
             % ...and if it is so, decide if this is the lowest.
             
             %% Get path value from the state from the transition starts
@@ -174,7 +174,7 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
     end
     
     %% Get lower paths transitions way back
-    input_inverse_secuence = zeros(1,trellis_width-1);
+    input_secuence = zeros(1,trellis_width-1);
     
     % Locate the lower path accumulated in the last iteration
     last_iteration_lower_path = 99999;
@@ -192,11 +192,11 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
         % Get transition, its states and its input
         i_transition = trellis_nodes_lower_transitions(i_reverse_input,i_current_next_state);
         current_transition = STATES_ADJACENCY(i_transition,:);
-        current_input = STATES_INPUT(i_transition,:)
+        current_input = STATES_INPUT(i_transition,:);
         current_state = current_transition(1,1:WORD_SIZE);
         
         % Save the input that triggered that transition
-        input_inverse_secuence(1,i_reverse_input) = str2double(regexp(current_input,'\d*','match'));
+        input_secuence(1,i_reverse_input) = str2double(regexp(current_input,'\d*','match'));
         
         % Get the next state index for the next transition
         for i_state = 1:size(STATES,1)
@@ -209,12 +209,11 @@ function decoderOut = decodificadorConvolucionalBlando_Sebastian_Lombranna_Alber
     end
     
     %% Post-treatment
-    fprintf('[CONV] The size of decoderIn is %.2f \n', size(decoderIn, 2));
-    extendedDecoderOut = fliplr(input_inverse_secuence);
+    extendedDecoderOut = input_secuence;
     fprintf('[CONV] The size of extendedDecoderOut is %.2f \n', size(extendedDecoderOut, 2));
-    decoderOut = extendedDecoderOut(1:(size(extendedDecoderOut,2) - (size(TB,2))) );
+    decoderOut = extendedDecoderOut(2:(size(extendedDecoderOut,2) - (size(TB,2))) );
     fprintf('[CONV] The size of decoderOut is %.2f \n', size(decoderOut, 2));
-    
+
 end
 
 %% Auxiliar functions
