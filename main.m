@@ -6,12 +6,22 @@
 SOFT_FLAG = true;  % False for use hard decoding; true for soft decoding.
 SOURCE_PROVIDED = false;
 SOURCE = [0 1 1 0 0 0 1 0 1 1 0 0 0];
-SOURCE_LENGTH = 5000;
+SOURCE_LENGTH = 50000;
 
 % Noise
 SIGMA = 0:0.025:0.9;    % Noise variance
 MU = 0;                 % Noise mean value
 ETA = 2;                % Spectral eficiency
+
+% EbN0 based noise
+EbNodB = -2:1:12;
+EbNo = 10.^(EbNodB/10);
+EbNoC = EbNo./2;
+EbNoCdB = 10*log10(EbNoC);
+SNR = EbNoC.*ETA;
+SNRdB = 10*log10(SNR);
+SIGMA = sqrt( 1./(2*SNR) );
+
 BER_soft_convolution = zeros(1,size(SIGMA,2));
 BER_hard_convolution = zeros(1,size(SIGMA,2));
 BER_no_convolution = zeros(1,size(SIGMA,2));
@@ -166,19 +176,13 @@ for i_sigma = 1:size(SIGMA,2)
 end
 
 %% Plot
-snr = zeros(1,size(SIGMA,2));
-% Signal power is SUM_a((1/2)*(input_a)) = 0.5 
-for i_sigma = 1:size(SIGMA,2)
-    snr(i_sigma) = (size(coderIn, 2)/size(coderOut, 2))*(0.5/SIGMA(i_sigma))*(1/ETA);
-end
-
-plot(10*log10(snr), 10*log10(BER_soft_convolution));
+plot(SNRdB, 10*log10(BER_soft_convolution));
 hold on;
-plot(10*log10(snr), 10*log10(BER_hard_convolution));
+plot(SNRdB, 10*log10(BER_hard_convolution));
 hold on;
-plot(10*log10(snr), 10*log10(BER_no_convolution));
-legend('BER soft convolution', 'BER hard convolution', 'BER no convolution');
+plot(SNRdB, 10*log10(BER_no_convolution));
+legend('BER decodificación blanda', 'BER decodificación dura', 'BER sin codificación');
 title('Curvas de BER');
-xlabel('SNR (dB)');
+xlabel('Eb/No de la fuente (dB)');
 ylabel('BER (dB)');
 
